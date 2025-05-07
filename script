@@ -1,0 +1,95 @@
+// Sample data for Excel formulas and shortcuts
+const data = [
+  { name: "SUM", type: "Formula", level: "Basic", description: "Adds numbers", example: "=SUM(A1:A5)" },
+  { name: "VLOOKUP", type: "Formula", level: "Intermediate", description: "Vertical lookup", example: "=VLOOKUP(1001, A2:B100, 2, FALSE)" },
+  { name: "SUMIFS", type: "Formula", level: "Advanced", description: "Add with multiple conditions", example: "=SUMIFS(B2:B10, A2:A10, \">10\")" },
+  { name: "Ctrl+Arrow", type: "Shortcut", level: "Basic", description: "Jump to data edge", example: "Navigate quickly" },
+  { name: "Ctrl+T", type: "Shortcut", level: "Intermediate", description: "Create Table", example: "Turn range into table" },
+];
+
+// DOM elements
+const cardContainer = document.getElementById("card-container");
+const search = document.getElementById("search");
+const filter = document.getElementById("filter");
+const exportBtn = document.getElementById("export-btn"); // Optional: Add a button in HTML for export
+
+// Debounce function to limit frequent calls on search input
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+// Filter and render cards based on search and level
+function renderCards() {
+  try {
+    const searchTerm = search.value.toLowerCase().trim();
+    const selectedLevel = filter.value;
+
+    // Clear previous cards
+    cardContainer.innerHTML = "";
+
+ feasily, preventing flicker
+    cardContainer.classList.add("loading");
+
+    // Filter data
+    const filtered = data.filter(item => {
+      const matchText = `${item.name.toLowerCase()} ${item.description.toLowerCase()}`;
+      return (selectedLevel === "All" || item.level === selectedLevel) &&
+             matchText.includes(searchTerm);
+    });
+
+    // Display message if no results
+    if (filtered.length === 0) {
+      cardContainer.innerHTML = '<div class="no-results">No matching results found</div>';
+      return;
+    }
+
+    // Render cards
+    filtered.forEach(item => {
+      const div = document.createElement("div");
+      div.className = `card ${item.level.toLowerCase()}`;
+      div.innerHTML = `
+        <h3>${item.name}</h3>
+        <div class="type">${item.type} - ${item.level}</div>
+        <div class="desc">${item.description}</div>
+        <div class="example"><code>${item.example}</code></div>
+      `;
+      cardContainer.appendChild(div);
+    });
+  } catch (error) {
+    console.error("Error rendering cards:", error);
+    cardContainer.innerHTML = '<div class="error">An error occurred while rendering cards</div>';
+  } finally {
+    cardContainer.classList.remove("loading");
+  }
+}
+
+// Export to PDF with better formatting
+function exportPDF() {
+  try {
+    const element = document.body;
+    const opt = {
+      margin: 0.5,
+      filename: "excel_guide.pdf",
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+    };
+    html2pdf().set(opt).from(element).save();
+  } catch (error) {
+    console.error("Error exporting PDF:", error);
+    alert("Failed to export PDF. Please try again.");
+  }
+}
+
+// Event listeners
+search.addEventListener("input", debounce(renderCards, 300)); // Debounced search
+filter.addEventListener("change", renderCards);
+if (exportBtn) {
+  exportBtn.addEventListener("click", exportPDF);
+}
+
+// Initial render
